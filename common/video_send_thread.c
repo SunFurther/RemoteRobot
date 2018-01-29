@@ -31,7 +31,8 @@ void* video_send_thread(int conn)
 while(1)
 {
 	pthread_testcancel();	
-	while(v_data.send_status);
+	while(v_data.send_status==0)
+	pthread_testcancel();
 	sem_wait(&v_send);
 	write(conn,start,5);
 //	printf("send start"); 
@@ -44,8 +45,7 @@ while(1)
 			else	
 				send_len=write(conn, v_data.start_data+j*1024,
 	v_data.length%1024); 
-		else
-				
+		else	
 				send_len=write(conn, v_data.start_data+j*1024,
 	1024); 
 		if(send_len<0)printf("send video data error");
@@ -53,7 +53,6 @@ while(1)
 	write(conn,end,3);
 	sem_post(&v_get);
 //	printf("send over");
-	
 }
 	close(conn);
 	printf("Send finish\n");  

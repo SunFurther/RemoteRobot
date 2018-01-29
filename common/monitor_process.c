@@ -24,7 +24,7 @@ pthread_t m_thread,vget_thread;
 void signal_proceed(int signo)
 {
 if(signo==SIGKILL)
-	cancel_all_process();
+	cancel_all_thread();
 }
 ////////////////////////////////////////////
 int create_all_thread()
@@ -45,7 +45,7 @@ int create_all_thread()
 ////////////////////////////////
 int create_all_thread()
 {
-	 err = pthread_create(&vget_thread, NULL, (void*)video_get_thread, &conn);
+	err = pthread_create(&vget_thread, NULL, (void*)video_get_thread, &conn);
         if (err != 0) {
                 fprintf(stderr, "can't create video get thread: %s\n",
                 strerror(err));
