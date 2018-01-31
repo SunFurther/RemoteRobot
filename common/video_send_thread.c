@@ -34,9 +34,11 @@ while(1)
 	while(v_data.send_status==0)
 	pthread_testcancel();
 	sem_wait(&v_send);
+	yuyv_to_jpeg(v_data.start_data,80,320,240);	
 	write(conn,start,5);
+
 //	printf("send start"); 
-	for(j=0;j<v_data.length/1024+1;j++)
+/*	for(j=0;j<v_data.length/1024+1;j++)
 		{
 		if(j==v_data.length/1024){
         		if((v_data.length-j*1024)!=0)
@@ -49,7 +51,10 @@ while(1)
 				send_len=write(conn, v_data.start_data+j*1024,
 	1024); 
 		if(send_len<0)printf("send video data error");
-		}
+		}*/
+
+
+	
 	write(conn,end,3);
 	sem_post(&v_get);
 //	printf("send over");
