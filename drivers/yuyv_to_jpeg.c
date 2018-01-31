@@ -3,23 +3,27 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <setjmp.h>
+#include "jpeglib.h"
 
+#define FILENAME "video.jpeg"
 
 static void yuv422_to_rgb24(unsigned char *yuv422,unsigned char *rgb24,
-int width, int height)  
-{  
-    int x,y;  
-    uint8_t *yuv444;  
-    yuv444 = (uint8_t *) malloc(sizeof(uint8_t) * width * height * 3);  
-    for(x = 0,y = 0;x < width*height*2,y < width*height*3;x+=4,y+=6)  
+int width, int height)
+{
+    int x=0,y=0;  
+    unsigned char *yuv444;  
+    yuv444=(unsigned char *)malloc(sizeof(unsigned char)*width*height*3);  
+    for(x = 0;x < width*height*2;x+=4)  
     {  
         yuv444[y] = yuv422[x];  
         yuv444[y+1] = yuv422[x+1];  
         yuv444[y+2] = yuv422[x+3];  
         yuv444[y+3] = yuv422[x+2];  
         yuv444[y+4] = yuv422[x+1];  
-        yuv444[y+5] = yuv422[x+3];  
-    }  
+        yuv444[y+5] = yuv422[x+3];
+	y=y+6;
+    }
     for(x = 0;x < width*height*3;x+=3)  
     {  
         rgb24[x+2] = yuv444[x] + 1.402*(yuv444[x+2] - 128);  
@@ -31,76 +35,73 @@ int width, int height)
         if (rgb24[x+1]<0)rgb24[x+1]=0;  
         if (rgb24[x+2]>255)rgb24[x+2]=255;  
         if (rgb24[x+2]<0)rgb24[x+2]=0;  
-    }  
-    free(yuv444);  
+    }
+    free(yuv444);
+}
+//////////////////////////////////////////////////////
+static void rgb24_to_jpeg(unsigned char *rgb24,
+ int width, int height,int quality )
+{
+  struct jpeg_compress_struct cinfo;
+  struct jpeg_error_mgr jerr;
+ 
+  FILE * outfile;		/* target file */
+  JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+  int row_stride;		/* physical row width in image buffer */
+
+  cinfo.err = jpeg_std_error(&jerr);
+  /* Now we can initialize the JPEG compression object. */
+  jpeg_create_compress(&cinfo);
+
+
+  if ((outfile = fopen(FILENAME, "wb")) == NULL) {
+    fprintf(stderr, "can't open %s\n", FILENAME);
+    exit(1);
+	}
+  jpeg_stdio_dest(&cinfo, outfile);
+
+  cinfo.image_width = width; 	/* image width and height, in pixels */
+  cinfo.image_height = height;
+  cinfo.input_components = 3;		/* # of color components per pixel */
+  cinfo.in_color_space = JCS_RGB; 	/* colorspace of input image */
+
+  jpeg_set_defaults(&cinfo);
+
+  jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
+
+  jpeg_start_compress(&cinfo, TRUE);
+
+  row_stride = width * 3;
+
+
+  while (cinfo.next_scanline < cinfo.image_height) {
+    /* jpeg_write_scanlines expects an array of pointers to scanlines.
+     * Here the array is only one element long, but you could pass
+     * more than one scanline at a time if that's more convenient.
+     */
+    row_pointer[0] = & rgb24[cinfo.next_scanline * row_stride];
+    (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+  }
+
+  jpeg_finish_compress(&cinfo);
+  /* After finish_compress, we can close the output file. */
+  fclose(outfile);
+
+  /* This is an important step since it will release a good deal of memory. */
+  jpeg_destroy_compress(&cinfo);
+
 }
 
-//////////////////////////////////////////////////////
-static void rgb_to_jpeg(unsigned char *rgb24,unsigned char *jpeg,
- int width, int height )
+////////////////////////////////////////////////////////
+int yuyv_to_jpeg(unsigned char* yuv422,int quality,
+	int width, int height)
 {
-    struct jpeg_compress_struct cinfo;
-    struct jpeg_error_mgr jerr;
-    JSAMPROW row_pointer[1];  /* pointer to JSAMPLE row[s] */
-    int row_stride;    /* physical row width in image buffer */
-    JSAMPIMAGE  buffer;
-    int band,i,buf_width[3],buf_height[3], mem_size, max_line, counter;
-    unsigned char *yuv[3];
-    uint8_t *pSrc, *pDst;
+	
+	unsigned char* rgb24=(unsigned char *)malloc(width*height*3);
+ 	yuv422_to_rgb24(yuv422,rgb24,width,height);
+ 	rgb24_to_jpeg(rgb24,width,height,quality);
 
-    yuv[0] = data;
-    yuv[1] = yuv[0] + (image_width * image_height);
-    yuv[2] = yuv[1] + (image_width * image_height) /2;
+ 	free(rgb24);
 
-    cinfo.err = jpeg_std_error(&jerr);
-    jpeg_create_compress(&cinfo);
-    jpeg_stdio_dest(&cinfo, fp);
-
-    cinfo.image_width = image_width;  /* image width and height, in pixels */
-    cinfo.image_height = image_height;
-    cinfo.input_components = 3;    /* # of color components per pixel */
-    cinfo.in_color_space = JCS_RGB;  /* colorspace of input image */
-
-    jpeg_set_defaults(&cinfo);
-    jpeg_set_quality(&cinfo, quality, TRUE );
-
-    cinfo.raw_data_in = TRUE;
-    cinfo.jpeg_color_space = JCS_YCbCr;
-    cinfo.comp_info[0].h_samp_factor = 2;
-    cinfo.comp_info[0].v_samp_factor = 1;
-
-    jpeg_start_compress(&cinfo, TRUE);
-
-    buffer = (JSAMPIMAGE) (*cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_IMAGE, 3 * sizeof(JSAMPARRAY));
-    for(band=0; band <3; band++)
-    {
-        buf_width[band] = cinfo.comp_info[band].width_in_blocks * DCTSIZE;
-        buf_height[band] = cinfo.comp_info[band].v_samp_factor * DCTSIZE;
-        buffer[band] = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, buf_width[band], buf_height[band]);
-    }
-    max_line = cinfo.max_v_samp_factor*DCTSIZE;
-    for(counter=0; cinfo.next_scanline < cinfo.image_height; counter++)
-    {
-        //buffer image copy.
-        for(band=0; band <3; band++)
-        {
-            mem_size = buf_width[band];
-            pDst = (uint8_t *) buffer[band][0];
-            pSrc = (uint8_t *) yuv[band] + counter*buf_height[band] * buf_width[band];
-
-            for(i=0; i <buf_height[band]; i++)
-            {
-                memcpy(pDst, pSrc, mem_size);
-                pSrc += buf_width[band];
-                pDst += buf_width[band];
-            }
-        }
-        jpeg_write_raw_data(&cinfo, buffer, max_line);
-    }
-
-    jpeg_finish_compress(&cinfo);
-    jpeg_destroy_compress(&cinfo);
-
-    return 0;
-
+	return 0;
 }
