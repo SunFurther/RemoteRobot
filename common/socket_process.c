@@ -13,36 +13,16 @@
 #include <signal.h>
 #include "global_data.h"
 
-#define MYPORT  50000
-#define QUEUE   4
-#define BUFFER_SIZE 1024
-
-extern struct socket_flag socket_fg; 
+extern struct socket_info sock_info; 
 extern void read_cmd(char* cmd);
 extern sem_t v_get,v_send;
 extern void* video_send_thread(void);
+extern void* video_broadcast_thread(void);
 extern void* info_conm_thread(void);
 
 pthread_t vsend_thread,vget_thread,info_thread;
 pid_t socket_fork[QUEUE];
 int err;
-static int socket_num=0;
-////////////////////////////////////////////
-void handle_request(int conn)
-{
- err = pthread_create(&vsend_thread, NULL, (void*)video_send_thread, &conn);
-        if (err != 0) {
-                fprintf(stderr, "can't create video send thread: %s\n",
-                strerror(err));
-		exit(1);
-		}
- err = pthread_create(&info_thread, NULL, (void*)info_conm_thread, &conn);
-        if (err != 0) {
-                fprintf(stderr, "can't create info conmunication thread: %s\n",
-                strerror(err));
-		exit(1);
-		}
-}
 
 ///////////////////////////////////////////
 void cancel_socket_pro_thread()
@@ -54,19 +34,18 @@ void cancel_socket_pro_thread()
 		pthread_join(info_thread,NULL);
 		printf("cancel info thread successfully\n");
 		}
-	if(pthread_cancel(vsend_thread)<0)
+/*	if(pthread_cancel(vsend_thread)<0)
 		printf("cancel video send thread failed");
 	else{
 		pthread_join(vsend_thread,NULL);
 		printf("cancel video send thread successfully\n");
-		}
+		}*/
 }
 ///////////////////////////////////////////
-void signal_proceed(int signo)
+void signal_sockchild_proceed(int signo)
 {
-if(signo==SIGKILL)
+if(signo==SIGINT)
 	cancel_socket_pro_thread();
-kill(getpid(),SIGKILL);
 exit(1);
 }
 
@@ -74,19 +53,59 @@ exit(1);
 void signal_socket_proceed(int signo)
 {
 int i;
-if(signo==SIGKILL)
-	for(i=0;i<socket_num;i++)
-	kill(socket_fork[i],SIGKILL);
-	
+if(signo==SIGINT)
+	for(i=0;i<sock_info.cli_num;i++)
+	kill(socket_fork[i],SIGINT);
 exit(1);
+}
+
+////////////////////////////////////////////
+void handle_request(int conn)
+{
+	if(signal(SIGINT,signal_sockchild_proceed)==SIG_ERR)
+		perror("socket child signal error");
+/* err = pthread_create(&vsend_thread, NULL, (void*)video_send_thread, &conn);
+        if (err != 0) {
+                fprintf(stderr, "can't create video send thread: %s\n",
+                strerror(err));
+		exit(1);
+		}*/ 
+err = pthread_create(&info_thread, NULL, (void*)info_conm_thread, &conn);
+        if (err != 0) {
+                fprintf(stderr, "can't create info conmunication thread: %s\n",
+                strerror(err));
+		exit(1);
+		}
+	while(1);
+}
+////////////////////////////////////////////
+int check_ip(char* ip)
+{
+int status=0;
+int i;
+int num=sock_info.cli_num;
+if(num>0)
+	{
+	for(i=0;i<num-1;i++)
+		if(memcmp(sock_info.cli_info[i].ip,ip,strlen(ip))==0)
+		{
+		status=1;break;
+		}
+	}
+else 
+	{
+	memcpy(sock_info.cli_info[num].ip,ip,strlen(ip));
+	}
+return status;
 }
 ////////////////////////////////////////////
 void socket_process(void)
 {
-	if(signal(SIGKILL,signal_socket_proceed)==SIG_ERR)
-		perror("signal error");
-	socket_fg.data_trans_status=0;
-	socket_fg.socket_con_status=0;
+	if(signal(SIGINT,signal_socket_proceed)==SIG_ERR)
+		perror(" socket signal error");
+	sock_info.data_trans_status=0;
+	sock_info.sock_con_status=0;
+	sock_info.cli_num=0;
 	///定义sockfd
 	int server_sockfd = socket(AF_INET,SOCK_STREAM, 0);
 	///定义sockaddr_in
@@ -110,12 +129,17 @@ void socket_process(void)
     }
 
     ///客户端套接字
-	char buffer[BUFFER_SIZE];
 	struct sockaddr_in client_addr;
 	socklen_t length = sizeof(client_addr);
+	int i,port;
+	char *ip;
+	for(i=0;i<QUEUE;i++)
+	memset(sock_info.cli_info[i].ip,0,
+	sizeof(sock_info.cli_info[i].ip));
 
+
+	sock_info.data_trans_status=1;
 	int conn;
-	socket_fg.socket_con_status=1;
 while(1)
 	{
 	conn=accept(server_sockfd, (struct sockaddr*)&client_addr,&length);
@@ -126,10 +150,18 @@ while(1)
                		 }
 		else
 			{
-			if(socket_fork[socket_num]=fork()>0)
-				if( socket_num<QUEUE)socket_num++;
-				else  socket_num=0;	
-			close(conn);
+			sock_info.sock_con_status=1;
+			ip=inet_ntoa(client_addr.sin_addr);
+			port=ntohs(client_addr.sin_port);
+			check_ip(ip);
+			if((socket_fork[sock_info.cli_num]=fork())>0)
+				{
+			   if(sock_info.cli_num<QUEUE)sock_info.cli_num++;
+			   else  sock_info.cli_num=0;
+		printf("client %d IP is:%s,port is:%d ",
+		sock_info.cli_num,ip,port);
+				close(conn);
+				}
 			else
 			handle_request(conn);
                 printf("connection successful \n");

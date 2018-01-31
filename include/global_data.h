@@ -4,6 +4,17 @@
 #define __GLOBAL_DATA_H_
 #endif
 
+#define MYPORT  50000
+#define QUEUE   4
+#define BUFFER_SIZE 1024
+#define ARRAY_SIZE 1024
+
+#define    MAXLINE        1024*1024
+#define    PORT         51000
+#define    BROADCAST_IP "224.0.0.100"
+#define    AIMED_IP     "192.168.1.12"
+#define    BACKLOG      4
+
 struct move_cmd
 {
 	int cmd_type;
@@ -16,11 +27,17 @@ struct move_info
 	int temperature;
 	int dist;
 };
-struct socket_flag
+struct client_info
 {
-	unsigned char *aimed_ip;
+	char ip[15];
 	int port;
-        int socket_con_status;
+}cli_info;
+
+struct socket_info
+{
+	struct client_info cli_info[QUEUE];
+	int cli_num;
+        int sock_con_status;
 	int data_trans_status;
 };
 

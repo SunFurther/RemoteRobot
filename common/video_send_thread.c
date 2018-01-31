@@ -21,7 +21,7 @@ extern sem_t v_get,v_send;
 void* video_send_thread(int conn)
 {
 //	char msg[BUFFER_SIZE];
-	int conn,send_len,opt=1;
+	int send_len;
 	int j;
 	char end[3]={"end"};
 	char start[5]={"start"};

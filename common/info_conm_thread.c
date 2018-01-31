@@ -12,11 +12,16 @@
 #include <sys/shm.h>
 #include "global_data.h"
 
+extern void read_cmd(char* cmd);
 
+/////////////////////////////////////////
 void info_conm_thread(int conn)
 {
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
+	char buffer[ARRAY_SIZE];
+//	int optval;
+//	socklen_t optlen = sizeof(int);
 	while(1)
 	{
 		pthread_testcancel();	
@@ -33,5 +38,11 @@ void info_conm_thread(int conn)
 				read_cmd(buffer);
 				}	
 			}
+		else 
+			{
+			close(conn);
+			break;
+			}
 	}
+		printf("this thread is closed");
 }

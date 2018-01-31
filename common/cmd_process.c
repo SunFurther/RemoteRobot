@@ -8,7 +8,7 @@
 #include "global_data.h"
 #include <semaphore.h>
 #include "include.h"
-
+#include <signal.h>
 
 ///////////////////////////////////////
 void input(char* cmd)
@@ -33,9 +33,17 @@ void input(char* cmd)
 	}
 	strcpy(cmd,input);
 }
+/////////////////////////////////////////
+void signal_cmd_proceed(int signo)
+{
+if(signo==SIGINT)	
+exit(1);
+}
 //////////////////////////////////////////
 void* cmd_process()
 {
+	if(signal(SIGINT,signal_cmd_proceed)==SIG_ERR)
+		perror("cmd signal error");
 while(1)
 	{
 	char input_cmd[CMD_LENGTH];
@@ -44,7 +52,7 @@ while(1)
 //	printf("%s",input_cmd);
 	if(!strcmp(input_cmd,"exit"))
 	{
-	kill(getppid(),SIGKILL);
+	kill(getppid(),SIGINT);
 	break;
 	}
     }

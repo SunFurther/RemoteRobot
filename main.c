@@ -9,10 +9,14 @@
 #include <semaphore.h>
 #include "include.h"
 #include <semaphore.h>
+#include <signal.h>
+#include <sys/wait.h>
+int sig_init(); 
+int create_all_process();
+int cancel_all_process();
+void sig_proceed(int signo);
 
-int signal_init(); 
-
-struct socket_flag socket_fg;
+struct socket_info sock_info;
 struct move_cmd m_cmd;
 struct move_info m_info;
 struct video_data v_data;
@@ -24,15 +28,15 @@ pid_t monitor_pro_pid,socket_pro_pid,cmd_pro_pid,err;
 //////////////////////////////////////////////
 int  main(int argc, char **argv)
 {
-	signal_init();
+	sig_init();
 	create_all_process();
-	if(signal(SIGKILL,signal_proceed)==SIG_ERR)
+	if(signal(SIGINT,sig_proceed)==SIG_ERR)
 		perror("signal error");
 	while(1);
 	return 0;
 }
 ///////////////////////////////////////////
-int signal_init()
+int sig_init()
 {
 	if(sem_init(&v_get,0,1)>0)
 	printf("v_get init error");
@@ -44,9 +48,9 @@ int signal_init()
 
 }
 ///////////////////////////////////////////
-void signal_proceed(int signo)
+void sig_proceed(int signo)
 {
-if(signo==SIGKILL)
+if(signo==SIGINT)
 	cancel_all_process();
 exit(1);
 }
@@ -54,7 +58,7 @@ exit(1);
 int cancel_all_process()
 {
 	int status;
-	if(kill(monitor_pro_pid,SIGKILL)<0)
+	if(kill(monitor_pro_pid,SIGINT)<0)
 		printf("cancel monitor process failed");
 	else{
 		err=waitpid(monitor_pro_pid,&status,WUNTRACED|WCONTINUED);
@@ -64,7 +68,7 @@ int cancel_all_process()
 		printf("cancel monitor process failed\n");
 		}
 
-	if(kill(cmd_pro_pid,SIGKILL)<0)
+	if(kill(cmd_pro_pid,SIGINT)<0)
 		printf("cancel cmd process failed");
 	else{
 		err=waitpid(cmd_pro_pid,&status,WUNTRACED|WCONTINUED);
@@ -74,7 +78,7 @@ int cancel_all_process()
 		printf("cancel cmd process failed\n");
 		}
 
-	if(kill(socket_pro_pid,SIGKILL)<0)
+	if(kill(socket_pro_pid,SIGINT)<0)
 		printf("cancel socket process failed");
 	else{
 		err=waitpid(socket_pro_pid,&status,WUNTRACED|WCONTINUED);
@@ -93,21 +97,21 @@ int create_all_process()
 	{
 	case -1:printf("cmd process create error!\n");break;
 	case 0:cmd_process();break;
-	default:printf("cmd process pid is:\n",cmd_pro_pid);break;
+	default:printf("cmd process pid is: %d \n",cmd_pro_pid);break;
 	}
 	monitor_pro_pid=fork();
 	switch(monitor_pro_pid)
 	{
 	case -1:printf("monitor process create error!\n");break;
 	case 0:monitor_process();break;
-	default:printf("monitor process pid is:\n",monitor_pro_pid);break;
+	default:printf("monitor process pid is:%d \n",monitor_pro_pid);break;
 	}
 	socket_pro_pid=fork();
 	switch(socket_pro_pid)
 	{
 	case -1:printf("socket process create error!\n");break;
 	case 0:socket_process();break;
-	default:printf("socket process pid is:\n",socket_pro_pid);break;
+	default:printf("socket process pid is:%d \n",socket_pro_pid);break;
 	}
 	return 0;
 }
