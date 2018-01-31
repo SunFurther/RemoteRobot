@@ -150,13 +150,9 @@ void *video_get_thread()
 	i=0;
 while(1)
 {
+	pthread_testcancel();
 	sem_wait(&v_get);
-	//printf("\n get video start: ");
-	//printf("%s",asctime(gmtime(&timep)));
-//	gettimeofday(&tv,NULL);
-	//printf("second:%ld\n",tv.tv_sec);  //秒
-	//printf("millisecond:%ld\n",tv.tv_sec*1000 + tv.tv_usec/1000);  //毫秒
-//	printf("microsecond:%ld\n",tv.tv_sec*1000000 + tv.tv_usec);  //微秒
+
 	v4l2buf.index=i%BUFFER_COUNT;
 	ret = ioctl(fd, VIDIOC_DQBUF, &v4l2buf);
 	if (ret < 0) {
@@ -172,13 +168,8 @@ while(1)
 	i++;
 	if(i==BUFFER_COUNT)
 	i=0;
-//	printf("\n get video over: ");
-//	printf("%s",asctime(gmtime(&timep)));
-//	gettimeofday(&tv,NULL);
-	//printf("second:%ld\n",tv.tv_sec);  //秒
-	//printf("millisecond:%ld\n",tv.tv_sec*1000 + tv.tv_usec/1000);  //毫秒
-//	printf("microsecond:%ld\n",tv.tv_sec*1000000 + tv.tv_usec);  //微秒
 
+	printf("video get successfully\n");
 	sem_post(&v_send);
 }
 	if(close(fd)==0)

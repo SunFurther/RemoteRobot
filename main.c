@@ -11,7 +11,7 @@
 #include <semaphore.h>
 #include <signal.h>
 #include <sys/wait.h>
-int sig_init(); 
+//int sig_init(); 
 int create_all_process();
 int cancel_all_process();
 void sig_proceed(int signo);
@@ -22,13 +22,11 @@ struct move_info m_info;
 struct video_data v_data;
 struct udp_flag u_flag;
 
-sem_t v_get,v_send,server_sock;
-
 pid_t monitor_pro_pid,socket_pro_pid,cmd_pro_pid,err;
 //////////////////////////////////////////////
 int  main(int argc, char **argv)
 {
-	sig_init();
+//	sig_init();
 	create_all_process();
 	if(signal(SIGINT,sig_proceed)==SIG_ERR)
 		perror("signal error");
@@ -36,7 +34,7 @@ int  main(int argc, char **argv)
 	return 0;
 }
 ///////////////////////////////////////////
-int sig_init()
+/*int sig_init()
 {
 	if(sem_init(&v_get,0,1)>0)
 	printf("v_get init error");
@@ -46,7 +44,7 @@ int sig_init()
 	printf("server_sock init error");
 	return 0;
 
-}
+}*/
 ///////////////////////////////////////////
 void sig_proceed(int signo)
 {

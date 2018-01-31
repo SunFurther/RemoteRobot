@@ -14,6 +14,9 @@
 #define    BROADCAST_IP "224.0.0.100"
 #define    AIMED_IP     "192.168.1.12"
 #define    BACKLOG      4
+#define    FILENAME	"video.jpeg"
+
+
 
 struct move_cmd
 {

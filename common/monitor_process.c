@@ -18,9 +18,23 @@ extern void *video_get_thread(void);
 extern void *video_broadcast_thread(void);
 
 int err;
+
+sem_t v_get,v_send;
+
 pthread_t m_thread,vget_thread,vsend_thread;
 ///////////////////////////////////////////
+///////////////////////////////////////////
+int sig_init()
+{
+        if(sem_init(&v_get,0,1)>0)
+        printf("v_get init error");
+        if(sem_init(&v_send,0,0)>0)
+        printf("v_send init error");
+       // if(sem_init(&server_sock,0,0)>0)
+       // printf("server_sock init error");
+        return 0;
 
+}
 ////////////////////////////////////////////
 int cancel_monitor_thread()
 {
@@ -80,6 +94,8 @@ exit(1);
 //////////////////////////////////////
 void monitor_process()
 {
+	
+	int sig_init();
 	create_monitor_thread();
 	if(signal(SIGINT,signal_monitor_proceed)==SIG_ERR)
 		perror("signal error");

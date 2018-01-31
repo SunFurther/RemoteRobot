@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include "jpeglib.h"
-
+#include "global_data.h"
 #define FILENAME "video.jpeg"
 
 static void yuv422_to_rgb24(unsigned char *yuv422,unsigned char *rgb24,
@@ -45,7 +45,7 @@ static void rgb24_to_jpeg(unsigned char *rgb24,
   struct jpeg_compress_struct cinfo;
   struct jpeg_error_mgr jerr;
  
-  FILE * outfile;		/* target file */
+  FILE * outfile;	/* target file */
   JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
   int row_stride;		/* physical row width in image buffer */
 
