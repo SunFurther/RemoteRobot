@@ -95,7 +95,7 @@ exit(1);
 void monitor_process()
 {
 	
-	int sig_init();
+	sig_init();
 	create_monitor_thread();
 	if(signal(SIGINT,signal_monitor_proceed)==SIG_ERR)
 		perror("signal error");

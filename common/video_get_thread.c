@@ -22,9 +22,8 @@
 
 #define CAMERA_DEVICE "/dev/video0"
 
-#define VIDEO_WIDTH 320
-#define VIDEO_HEIGHT 240
 #define VIDEO_FORMAT V4L2_PIX_FMT_YUYV
+
 #define BUFFER_COUNT 4
 
 extern struct video_data v_data;
@@ -149,9 +148,11 @@ void *video_get_thread()
 
 	i=0;
 while(1)
-{
+    {
 	pthread_testcancel();
 	sem_wait(&v_get);
+
+//	printf("video get start\n");
 
 	v4l2buf.index=i%BUFFER_COUNT;
 	ret = ioctl(fd, VIDIOC_DQBUF, &v4l2buf);
@@ -169,9 +170,9 @@ while(1)
 	if(i==BUFFER_COUNT)
 	i=0;
 
-	printf("video get successfully\n");
+//	printf("video get successfully\n");
 	sem_post(&v_send);
-}
+   }
 	if(close(fd)==0)
 	printf("Camera is closed.\n");
 	else

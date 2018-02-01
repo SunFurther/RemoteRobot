@@ -6,7 +6,6 @@
 #include <setjmp.h>
 #include "jpeglib.h"
 #include "global_data.h"
-#define FILENAME "video.jpeg"
 
 static void yuv422_to_rgb24(unsigned char *yuv422,unsigned char *rgb24,
 int width, int height)
@@ -22,14 +21,28 @@ int width, int height)
         yuv444[y+3] = yuv422[x+2];  
         yuv444[y+4] = yuv422[x+1];  
         yuv444[y+5] = yuv422[x+3];
+/*
+        yuv444[y] = yuv422[y]*0.8588+16;  
+        yuv444[y+1] = yuv422[y+1]*0.8784+16;  
+        yuv444[y+2] = yuv422[y+2]*0.8784+16;  
+        yuv444[y+3] = yuv422[y+3]*0.8588+16;  
+        yuv444[y+4] = yuv422[y+4]*0.8784+16;  
+        yuv444[y+5] = yuv422[y+5]*0.8784+16;
+*/
 	y=y+6;
     }
     for(x = 0;x < width*height*3;x+=3)  
     {  
-        rgb24[x+2] = yuv444[x] + 1.402*(yuv444[x+2] - 128);  
-        rgb24[x+1] = yuv444[x]-0.34414*(yuv444[x+1]-128)-0.71414*(yuv444[x+2]-128);  
-        rgb24[x] = yuv444[x] + 1.772*(yuv444[x+1] - 128);  
-        if (rgb24[x]>255)rgb24[x]=255;  
+        rgb24[x+2] = yuv444[x] + 1.779*(yuv444[x+1] - 128);  
+        rgb24[x+1] = yuv444[x]-0.3455*(yuv444[x+1]-128)-0.7169*(yuv444[x+2]-128);  
+        rgb24[x] = yuv444[x] + 1.4075*(yuv444[x+2] - 128);  
+       
+
+/*	rgb24[x+2] = yuv444[x]*1.164 + 2.017*yuv444[x+1] -276.8;  
+     rgb24[x+1] = yuv444[x]*1.164-0.392*yuv444[x+1]-0.823*yuv444[x+2]+135.6;  
+        rgb24[x] = yuv444[x]*1.164 + 1.596*yuv444[x+2] - 222.9;  
+  */     
+	 if (rgb24[x]>255)rgb24[x]=255;  
         if (rgb24[x]<0)rgb24[x]=0;  
         if (rgb24[x+1]>255)rgb24[x+1]=255;  
         if (rgb24[x+1]<0)rgb24[x+1]=0;  

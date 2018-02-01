@@ -5,13 +5,14 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 ////////////////////////////////////////////////
-int read_file_to_buff( char* filename,unsigned char* file_buff)
+int read_file_to_buff(char* filename,unsigned char* file_buff)
 {
 
 	struct stat file_info;
         stat(filename,&file_info);
+
 	int file_size=file_info.st_size;
-        printf("the file is %d byte",file_size);
+//        printf("the file is %d byte",file_size);
 	
         FILE* fp;
         fp=fopen(filename,"r");
@@ -22,7 +23,7 @@ int read_file_to_buff( char* filename,unsigned char* file_buff)
 	}
         
 	fread(file_buff,1,file_size,fp);
-        fclose(fp);
+	fclose(fp);
 
 	return file_size;
 }
